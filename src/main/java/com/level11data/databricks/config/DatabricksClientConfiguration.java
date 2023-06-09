@@ -20,6 +20,7 @@ public class DatabricksClientConfiguration extends PropertiesConfiguration {
     public static final String WORKSPACE_TOKEN    = WORKSPACE_PREFIX + ".token";
     public static final String WORKSPACE_USERNAME = WORKSPACE_PREFIX + ".username";
     public static final String WORKSPACE_PASSWORD = WORKSPACE_PREFIX + ".password";
+    public String userAgent = "infoworks.io";
 
     public DatabricksClientConfiguration() throws DatabricksClientConfigException {
         super();
@@ -145,6 +146,14 @@ public class DatabricksClientConfiguration extends PropertiesConfiguration {
         }
     }
 
+    public void setUserAgent(String userAgentVal) {
+        this.userAgent = userAgentVal;
+    }
+
+    public String getUserAgent() {
+        return this.userAgent;
+    }
+
     private void validateRequiredClientProps() throws DatabricksClientConfigException{
         boolean valid = true;
         valid &= verifyStringPropSet(WORKSPACE_URL);
@@ -201,4 +210,5 @@ public class DatabricksClientConfiguration extends PropertiesConfiguration {
         }
         return true;
     }
+
 }

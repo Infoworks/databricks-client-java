@@ -1,69 +1,114 @@
 package com.level11data.databricks.session;
 
-import com.level11data.databricks.client.*;
-import com.level11data.databricks.client.entities.dbfs.*;
 import com.level11data.databricks.client.entities.instancepools.InstancePoolGetResponseDTO;
-import com.level11data.databricks.client.entities.instancepools.InstancePoolListRequestDTO;
 import com.level11data.databricks.client.entities.instancepools.InstancePoolListResponseDTO;
-import com.level11data.databricks.client.entities.workspace.*;
-import com.level11data.databricks.cluster.*;
-import com.level11data.databricks.cluster.builder.*;
-import com.level11data.databricks.config.DatabricksClientConfiguration;
-import com.level11data.databricks.client.entities.jobs.*;
-import com.level11data.databricks.client.entities.clusters.*;
-import com.level11data.databricks.config.DatabricksClientConfigException;
-import com.level11data.databricks.dbfs.*;
-import com.level11data.databricks.instancepool.InstancePool;
 import com.level11data.databricks.instancepool.InstancePoolConfigException;
+import com.level11data.databricks.instancepool.InstancePool;
 import com.level11data.databricks.instancepool.builder.CreateInstancePoolBuilder;
-import com.level11data.databricks.job.*;
-import com.level11data.databricks.job.builder.*;
-import com.level11data.databricks.job.run.*;
-import com.level11data.databricks.library.*;
-import com.level11data.databricks.util.ResourceConfigException;
-import com.level11data.databricks.workspace.*;
 import com.level11data.databricks.workspace.builder.ScalaNotebookBuilder;
-import com.level11data.databricks.workspace.util.WorkspaceHelper;
-import org.glassfish.jersey.SslConfigurator;
-import org.glassfish.jersey.client.ClientConfig;
-import org.glassfish.jersey.client.HttpUrlConnectorProvider;
-import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
-import org.glassfish.jersey.jackson.JacksonFeature;
-
-import javax.net.ssl.SSLContext;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
+import com.level11data.databricks.client.entities.workspace.WorkspaceDeleteRequestDTO;
+import com.level11data.databricks.client.entities.workspace.WorkspaceMkdirsRequestDTO;
+import com.level11data.databricks.library.CranLibrary;
+import com.level11data.databricks.library.PyPiLibrary;
+import com.level11data.databricks.library.MavenLibrary;
+import com.level11data.databricks.library.EggLibrary;
+import com.level11data.databricks.library.LibraryConfigException;
+import com.level11data.databricks.client.entities.dbfs.FileInfoDTO;
+import com.level11data.databricks.client.entities.dbfs.DbfsListResponseDTO;
+import com.level11data.databricks.client.entities.dbfs.DbfsDeleteRequestDTO;
+import com.level11data.databricks.dbfs.DbfsFileInfo;
+import com.level11data.databricks.dbfs.DbfsException;
+import com.level11data.databricks.dbfs.DbfsHelper;
+import com.level11data.databricks.job.builder.AutomatedSparkSubmitJobBuilder;
+import com.level11data.databricks.job.builder.AutomatedPythonJobBuilder;
 import java.io.File;
-import java.net.URI;
+import com.level11data.databricks.job.builder.AutomatedJarJobBuilder;
+import com.level11data.databricks.library.JarLibrary;
+import com.level11data.databricks.job.builder.AutomatedNotebookJobBuilder;
+import com.level11data.databricks.client.entities.jobs.RunDTO;
+import com.level11data.databricks.job.run.JobRunException;
+import com.level11data.databricks.job.run.AutomatedSparkSubmitJobRun;
+import com.level11data.databricks.job.run.InteractivePythonJobRun;
+import com.level11data.databricks.job.run.AutomatedPythonJobRun;
+import com.level11data.databricks.job.run.InteractiveJarJobRun;
+import com.level11data.databricks.job.run.AutomatedJarJobRun;
+import com.level11data.databricks.job.run.AutomatedNotebookJobRun;
+import com.level11data.databricks.job.run.InteractiveNotebookJobRun;
+import com.level11data.databricks.job.run.JobRun;
+import com.level11data.databricks.job.PythonScript;
+import com.level11data.databricks.workspace.Notebook;
+import com.level11data.databricks.client.entities.jobs.JobDTO;
+import com.level11data.databricks.workspace.WorkspaceConfigException;
+import com.level11data.databricks.util.ResourceConfigException;
 import java.net.URISyntaxException;
-import java.util.*;
+import com.level11data.databricks.job.JobConfigException;
+import com.level11data.databricks.job.AutomatedSparkSubmitJob;
+import com.level11data.databricks.job.AutomatedPythonJob;
+import com.level11data.databricks.job.InteractivePythonJob;
+import com.level11data.databricks.job.AutomatedJarJob;
+import com.level11data.databricks.job.InteractiveJarJob;
+import com.level11data.databricks.job.AutomatedNotebookJob;
+import com.level11data.databricks.job.InteractiveNotebookJob;
+import com.level11data.databricks.job.Job;
+import com.level11data.databricks.client.entities.clusters.ClusterInfoDTO;
+import com.level11data.databricks.cluster.ClusterIter;
+import com.level11data.databricks.cluster.InteractiveCluster;
+import com.level11data.databricks.client.entities.clusters.NodeTypeDTO;
+import com.level11data.databricks.cluster.ClusterConfigException;
+import com.level11data.databricks.client.entities.clusters.SparkVersionDTO;
+import java.util.ArrayList;
+import com.level11data.databricks.client.HttpException;
+import com.level11data.databricks.cluster.builder.AutomatedClusterBuilder;
+import com.level11data.databricks.cluster.builder.InteractiveClusterBuilder;
+import java.util.Iterator;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import java.util.HashMap;
+import java.util.Map;
+import javax.ws.rs.client.Invocation;
+import javax.net.ssl.SSLContext;
+import javax.ws.rs.core.Configuration;
+import javax.ws.rs.client.ClientBuilder;
+import org.glassfish.jersey.SslConfigurator;
+import org.glassfish.jersey.client.spi.ConnectorProvider;
+import org.glassfish.jersey.client.HttpUrlConnectorProvider;
+import org.glassfish.jersey.jackson.JacksonFeature;
+import org.glassfish.jersey.client.ClientConfig;
+import com.level11data.databricks.config.DatabricksClientConfigException;
+import com.level11data.databricks.workspace.util.WorkspaceHelper;
+import com.level11data.databricks.cluster.NodeType;
+import com.level11data.databricks.cluster.SparkVersion;
+import java.util.List;
+import com.level11data.databricks.client.entities.clusters.NodeTypesDTO;
+import com.level11data.databricks.client.entities.clusters.SparkVersionsDTO;
+import com.level11data.databricks.client.InstancePoolsClient;
+import com.level11data.databricks.client.WorkspaceClient;
+import com.level11data.databricks.client.DbfsClient;
+import com.level11data.databricks.client.LibrariesClient;
+import com.level11data.databricks.client.JobsClient;
+import com.level11data.databricks.client.ClustersClient;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
+import javax.ws.rs.client.Client;
+import com.level11data.databricks.config.DatabricksClientConfiguration;
+import java.net.URI;
 
-
-public class WorkspaceSession {
+public class WorkspaceSession
+{
     protected final URI Endpoint;
-
     private final DatabricksClientConfiguration _databricksClientConfig;
-
     private Client _httpClient;
     private HttpAuthenticationFeature _userPassAuth;
-
     private ClustersClient _clustersClient;
     private JobsClient _jobsClient;
     private LibrariesClient _librariesClient;
     private DbfsClient _dbfsClient;
     private WorkspaceClient _workspaceClient;
     private InstancePoolsClient _instancePoolsClient;
-
     private SparkVersionsDTO _sparkVersionsDTO;
     private NodeTypesDTO _nodeTypesDTO;
     private List<SparkVersion> _sparkVersions;
     private List<NodeType> _nodeTypes;
     private WorkspaceHelper _workspaceHelper;
-
     private final String SECURITY_PROTOCOL = "TLSv1.2";
 
     public WorkspaceSession(DatabricksClientConfiguration databricksClientConfig) throws DatabricksClientConfigException {
@@ -97,62 +142,32 @@ public class WorkspaceSession {
                 .build();
     }
 
-    public Builder getRequestBuilder(String path) {
+    public Invocation.Builder getRequestBuilder(String path) {
         return getRequestBuilder(path, null);
     }
 
-    public Builder getRequestBuilder(String path, String queryParamKey, Object queryParamValue) {
+    public Invocation.Builder getRequestBuilder(String path, String queryParamKey, Object queryParamValue) {
         Map<String, Object> queryMap = new HashMap<>();
         queryMap.put(queryParamKey, queryParamValue);
-        return getRequestBuilder(path, queryMap);
+        return this.getRequestBuilder(path, queryMap);
     }
 
-    public Builder getRequestBuilder(String path, Map<String,Object> queryParams) {
-        //TODO add DEBUG System.out.println(_httpClient.target(this.Endpoint).path(path).getUri().toString());
-//        if(queryParams != null) {
-//            System.out.println("Query Params:");
-//            queryParams.forEach((k,v) -> System.out.println("(" + k + "," + v + ")"));
-//        }
-
-        if(_databricksClientConfig.hasClientToken()) {
-            //authenticate with token as first priority
-            //System.out.println("Authenticating with TOKEN");
+    public Invocation.Builder getRequestBuilder(final String path, final Map<String, Object> queryParams) {
+        if (this._databricksClientConfig.hasClientToken()) {
             if (queryParams != null) {
-                WebTarget target = _httpClient.target(this.Endpoint).path(path);
-
-                target = applyQueryParameters(target, queryParams);
-
-                return target
-                        .request(MediaType.APPLICATION_JSON_TYPE)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + _databricksClientConfig.getWorkspaceToken())
-                        .accept(MediaType.APPLICATION_JSON);
-            } else {
-                return _httpClient
-                        .target(this.Endpoint)
-                        .path(path)
-                        .request(MediaType.APPLICATION_JSON_TYPE)
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + _databricksClientConfig.getWorkspaceToken())
-                        .accept(MediaType.APPLICATION_JSON);
+                WebTarget target = this._httpClient.target(this.Endpoint).path(path);
+                target = this.applyQueryParameters(target, queryParams);
+                return target.request(MediaType.APPLICATION_JSON_TYPE).header("Authorization", "Bearer " + this._databricksClientConfig.getWorkspaceToken()).header("User-Agent", this._databricksClientConfig.getUserAgent()).accept("application/json");
             }
-        } else {
-            //otherwise, authenticate with username and password
-            //TODO add DEBUG System.out.println("Authenticating with USERNAME and PASSWORD");
-            if(queryParams != null) {
-                WebTarget target = _httpClient.target(this.Endpoint).path(path);
-
-                target = applyQueryParameters(target, queryParams);
-
-                return target
-                        .request(MediaType.APPLICATION_JSON_TYPE)
-                        .accept(MediaType.APPLICATION_JSON);
-            } else {
-                return _httpClient
-                        .target(this.Endpoint)
-                        .path(path)
-                        .register(getUserPassAuth())
-                        .request(MediaType.APPLICATION_JSON_TYPE)
-                        .accept(MediaType.APPLICATION_JSON);
+            return this._httpClient.target(this.Endpoint).path(path).request(MediaType.APPLICATION_JSON_TYPE).header("Authorization", "Bearer " + this._databricksClientConfig.getWorkspaceToken()).header("User-Agent", this._databricksClientConfig.getUserAgent()).accept("application/json");
+        }
+        else {
+            if (queryParams != null) {
+                WebTarget target = this._httpClient.target(this.Endpoint).path(path);
+                target = this.applyQueryParameters(target, queryParams);
+                return target.request(MediaType.APPLICATION_JSON_TYPE).header("User-Agent", this._databricksClientConfig.getUserAgent()).accept("application/json");
             }
+            return this._httpClient.target(this.Endpoint).path(path).register(this.getUserPassAuth()).request(MediaType.APPLICATION_JSON_TYPE).header("User-Agent", this._databricksClientConfig.getUserAgent()).accept("application/json");
         }
     }
 
@@ -165,20 +180,17 @@ public class WorkspaceSession {
     }
 
     private HttpAuthenticationFeature getUserPassAuth() {
-        if(_userPassAuth == null) {
-            _userPassAuth = HttpAuthenticationFeature.basicBuilder()
-                    .credentials(_databricksClientConfig.getWorkspaceUsername()
-                            , _databricksClientConfig.getWorkspacePassword())
-                    .build();
+        if (this._userPassAuth == null) {
+            this._userPassAuth = HttpAuthenticationFeature.basicBuilder().credentials(this._databricksClientConfig.getWorkspaceUsername(), this._databricksClientConfig.getWorkspacePassword()).build();
         }
-        return _userPassAuth;
+        return this._userPassAuth;
     }
 
     public ClustersClient getClustersClient() {
-        if(_clustersClient == null) {
-            _clustersClient =  new ClustersClient(this);
+        if (this._clustersClient == null) {
+            this._clustersClient = new ClustersClient(this);
         }
-        return _clustersClient;
+        return this._clustersClient;
     }
 
     public LibrariesClient getLibrariesClient() {
@@ -641,5 +653,16 @@ public class WorkspaceSession {
             throw new InstancePoolConfigException(e);
         }
     }
-}
 
+    public URI getEndpoint() {
+        return this.Endpoint;
+    }
+
+    public String getToken() {
+        return this._databricksClientConfig.getWorkspaceToken();
+    }
+
+    public String getUserAgent() {
+        return this._databricksClientConfig.getUserAgent();
+    }
+}
