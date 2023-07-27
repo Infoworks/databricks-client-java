@@ -90,7 +90,6 @@ public class WorkspaceSession {
         SSLContext sslContext = SslConfigurator.newInstance().securityProtocol(SECURITY_PROTOCOL).createSSLContext();
         System.setProperty("https.protocols", SECURITY_PROTOCOL);
         System.setProperty("jdk.tls.client.protocols", SECURITY_PROTOCOL);
-
         _httpClient = ClientBuilder.newBuilder()
                 .sslContext(sslContext)
                 .withConfig(clientConfig)
@@ -347,7 +346,6 @@ public class WorkspaceSession {
 
         try {
             JobDTO jobDTO = client.getJob(jobId);
-
             if(jobDTO.isInteractive() && jobDTO.isNotebookJob()) {
                 InteractiveCluster cluster = getCluster(jobDTO.Settings.ExistingClusterId);
                 Notebook notebook = getNotebook(jobDTO.Settings.NotebookTask.NotebookPath);
@@ -391,7 +389,6 @@ public class WorkspaceSession {
         throw new JobConfigException("Unsupported Job Type");
     }
 
-
     public Job getFirstJobByName(String jobName) throws JobConfigException {
         JobsClient client = getJobsClient();
         try{
@@ -402,7 +399,6 @@ public class WorkspaceSession {
                     return getJob(jobDTO.JobId);
                 }
             }
-            //no matching job name found
             return null;
         } catch(HttpException e) {
             throw new JobConfigException(e);
@@ -641,5 +637,16 @@ public class WorkspaceSession {
             throw new InstancePoolConfigException(e);
         }
     }
-}
 
+    public URI getEndpoint() {
+        return Endpoint;
+    }
+
+    public String getToken() {
+        return _databricksClientConfig.getWorkspaceToken();
+    }
+
+    public String getUserAgent() {
+        return _databricksClientConfig.getUserAgent();
+    }
+}
