@@ -25,14 +25,14 @@ public class PermissionsClient extends AbstractDatabricksClient {
      * @return PermissionsDTO
      */
     public PermissionsDTO getPermissions(RequestObjectType requestObjectType, String objectId) throws HttpException {
-        String pathSuffix = getPathSuffix(requestObjectType) + objectId;
+        String pathSuffix = getPathSuffix(requestObjectType) + "/" + objectId;
         Response response = Session.getRequestBuilder(pathSuffix).get();
         checkResponse(response);
         return response.readEntity(PermissionsDTO.class);
     }
 
     public PermissionsDTO setPermissions(RequestObjectType requestObjectType, String objectId, PermissionInfoDTO[] accessList) throws HttpException {
-        String pathSuffix = getPathSuffix(requestObjectType) + objectId;
+        String pathSuffix = getPathSuffix(requestObjectType) + "/" + objectId;
         PermissionsDTO permissionsDTO = new PermissionsDTO();
         permissionsDTO.AccessControlList = accessList;
         Response response = Session.getRequestBuilder(pathSuffix).put(Entity.json(permissionsDTO));
@@ -41,7 +41,7 @@ public class PermissionsClient extends AbstractDatabricksClient {
     }
 
     public PermissionsDTO updatePermissions(RequestObjectType requestObjectType, String objectId, PermissionInfoDTO[] accessList) throws HttpException {
-        String pathSuffix = getPathSuffix(requestObjectType) + objectId;
+        String pathSuffix = getPathSuffix(requestObjectType) + "/" + objectId;
         PermissionsDTO permissionsDTO = new PermissionsDTO();
         permissionsDTO.AccessControlList = accessList;
         Response response = Session.getRequestBuilder(pathSuffix).method("PATCH", Entity.json(permissionsDTO));

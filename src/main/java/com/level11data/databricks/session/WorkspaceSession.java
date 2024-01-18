@@ -120,7 +120,7 @@ public class WorkspaceSession {
                 WebTarget target = _httpClient.target(this.Endpoint).path(path);
 
                 target = applyQueryParameters(target, queryParams);
-
+                target.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
                 return target
                         .request(MediaType.APPLICATION_JSON_TYPE)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + _databricksClientConfig.getWorkspaceToken())
@@ -129,6 +129,7 @@ public class WorkspaceSession {
                 return _httpClient
                         .target(this.Endpoint)
                         .path(path)
+                        .property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true)
                         .request(MediaType.APPLICATION_JSON_TYPE)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + _databricksClientConfig.getWorkspaceToken())
                         .accept(MediaType.APPLICATION_JSON);
@@ -138,6 +139,7 @@ public class WorkspaceSession {
             //TODO add DEBUG System.out.println("Authenticating with USERNAME and PASSWORD");
             if(queryParams != null) {
                 WebTarget target = _httpClient.target(this.Endpoint).path(path);
+                target.property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
 
                 target = applyQueryParameters(target, queryParams);
 
@@ -147,6 +149,7 @@ public class WorkspaceSession {
             } else {
                 return _httpClient
                         .target(this.Endpoint)
+                        .property(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true)
                         .path(path)
                         .register(getUserPassAuth())
                         .request(MediaType.APPLICATION_JSON_TYPE)
