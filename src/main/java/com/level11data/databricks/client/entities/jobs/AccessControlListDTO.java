@@ -18,6 +18,12 @@ public class AccessControlListDTO {
   @JsonProperty("permission_level")
   public String PermissionLevel;
 
+  @JsonProperty("group_name")
+  public String GroupName;
+
+  @JsonProperty("service_principal_name")
+  public String ServicePrincipalName;
+
   @Override
   public String toString() {
     ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
